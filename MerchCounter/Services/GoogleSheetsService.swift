@@ -239,6 +239,26 @@ struct ValueRange: Codable {
     let values: [[String]]?
 }
 
+extension GoogleSheetsService {
+    func fetchRowCounts() async throws -> (total: Int, today: Int) {
+        let token = try await getValidToken()
+        let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(spreadsheetId)/values/Sheet1!A:A")!
+        var req = URLRequest(url: url)
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let (data, resp) = try await session.data(for: req)
+        guard let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200 else {
+            throw ServiceError.invalidResponse
+        }
+        let range = try JSONDecoder().decode(ValueRange.self, from: data)
+        let dataRows = (range.values ?? []).dropFirst()
+        let total = dataRows.count
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        let todayStr = f.string(from: Date())
+        let today = dataRows.filter { $0.first == todayStr }.count
+        return (total, today)
+    }
+}
 // MARK: - Errors
 
 enum ServiceError: Error, LocalizedError {

@@ -9,6 +9,17 @@ actor SubmissionQueue {
 
     private var records: [SurveyRecord] = []
     private let fileURL: URL
+    private let defaults = UserDefaults.standard
+
+    private let totalKey = "cumulative_total"
+    private let todayKey = "cumulative_today"
+    private let todayDateKey = "cumulative_today_date"
+
+    private static var dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
 
     private init() {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -24,11 +35,42 @@ actor SubmissionQueue {
         records.filter { Calendar.current.isDateInToday($0.timestamp) }.count
     }
 
+    var cumulativeTotal: Int { defaults.integer(forKey: totalKey) }
+
+    var cumulativeToday: Int {
+        let saved = defaults.string(forKey: todayDateKey) ?? ""
+        guard saved == Self.dateFormatter.string(from: Date()) else { return 0 }
+        return defaults.integer(forKey: todayKey)
+    }
+
     func add(_ record: SurveyRecord) {
         records.append(record)
         save()
+        defaults.set(defaults.integer(forKey: totalKey) + 1, forKey: totalKey)
+        let today = Self.dateFormatter.string(from: Date())
+        let saved = defaults.string(forKey: todayDateKey) ?? ""
+        if saved == today {
+            defaults.set(defaults.integer(forKey: todayKey) + 1, forKey: todayKey)
+        } else {
+            defaults.set(today, forKey: todayDateKey)
+            defaults.set(1, forKey: todayKey)
+        }
         notify()
         flushInBackground()
+    }
+
+    func syncCumulativeFromSheet() async {
+        let service = try? await MainActor.run { try GoogleSheetsService() }
+        guard let counts = try? await service?.fetchRowCounts() else { return }
+        let today = Self.dateFormatter.string(from: Date())
+        let localTodayDate = defaults.string(forKey: todayDateKey) ?? ""
+        defaults.set(max(defaults.integer(forKey: totalKey), counts.total), forKey: totalKey)
+        defaults.set(today, forKey: todayDateKey)
+        if localTodayDate == today {
+            defaults.set(max(defaults.integer(forKey: todayKey), counts.today), forKey: todayKey)
+        } else {
+            defaults.set(counts.today, forKey: todayKey)
+        }
     }
 
     func flushInBackground() {

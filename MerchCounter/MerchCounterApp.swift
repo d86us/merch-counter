@@ -6,6 +6,7 @@ struct MerchCounterApp: App {
         WindowGroup {
             ContentView()
                 .task {
+                    await SubmissionQueue.shared.syncCumulativeFromSheet()
                     await SubmissionQueue.shared.flushInBackground()
                 }
         }

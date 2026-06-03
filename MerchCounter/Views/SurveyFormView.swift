@@ -307,8 +307,8 @@ struct SurveyFormView: View {
     }
 
     private func updateStatsText() async {
-        totalCount = await SubmissionQueue.shared.count
-        todayCount = await SubmissionQueue.shared.todayCount
+        totalCount = await SubmissionQueue.shared.cumulativeTotal
+        todayCount = await SubmissionQueue.shared.cumulativeToday
     }
 }
 

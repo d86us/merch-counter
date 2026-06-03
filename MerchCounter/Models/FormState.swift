@@ -12,15 +12,15 @@ class FormState {
     var showCustomMerch = false
     var customMerchInput = ""
 
-    var garmentColors: Set<String> = ["Black"]
+    var garmentColors: Set<String> = []
     var showCustomGarmentColor = false
     var customGarmentColorInput = ""
 
-    var printColors: Set<String> = ["White"]
+    var printColors: Set<String> = []
     var showCustomPrintColor = false
     var customPrintColorInput = ""
 
-    var designFeatures: Set<String> = ["San Francisco", "California"]
+    var designFeatures: Set<String> = []
     var customDesignFeatures: [String] = []
     var showCustomDesignFeature = false
     var customDesignFeatureInput = ""
@@ -29,12 +29,7 @@ class FormState {
 
     let timestamp = Date()
 
-    init() {
-        gender = "Male"
-        ageGroup = "30"
-        race = "White"
-        merchType = "Hoodie"
-    }
+    init() {}
 
     var weather: String?
     var temperature: String?
@@ -44,10 +39,10 @@ class FormState {
 
     static let merchTypeOptions = ["T-Shirt", "Hoodie", "Baseball Hat", "Winter Hat", "Jacket", "Sweatshirt", "Bag"]
     static let designFeatureOptions = [
-        "Animal", "Bay Area", "Bay Bridge", "CA", "Cable Cart", "California", "California Flag",
-        "Golden Gate Bridge", "Illustration", "Non-SF Merch", "San Francisco", "SF", "SF Baseball", "SF Football",
-        "Sightseeing", "Since 1850", "Sport Font", "Salesforce Tower", "Trans American Building",
-        "Type Only", "Bear"
+        "Animal", "Bay Area", "Bay Bridge", "Bear", "CA", "Cable Cart", "California", "California Flag",
+        "Golden Gate Bridge", "Illustration", "Non-SF Merch", "San Francisco", "Salesforce Tower",
+        "SF", "SF Baseball", "SF Football", "Sightseeing", "Since 1850", "Sport Font",
+        "Transamerica Pyramid", "Type Only", "USA", "USA Flag"
     ]
 
     var isReady: Bool {
@@ -105,20 +100,20 @@ class FormState {
     }
 
     func reset() {
-        gender = "Male"
-        ageGroup = "30"
-        race = "White"
-        merchType = "Hoodie"
+        gender = nil
+        ageGroup = nil
+        race = nil
+        merchType = nil
         customMerchTypes = []
         customMerchInput = ""
         showCustomMerch = false
-        garmentColors = ["Black"]
+        garmentColors = []
         customGarmentColorInput = ""
         showCustomGarmentColor = false
-        printColors = ["White"]
+        printColors = []
         customPrintColorInput = ""
         showCustomPrintColor = false
-        designFeatures = ["San Francisco", "California"]
+        designFeatures = []
         customDesignFeatures = []
         customDesignFeatureInput = ""
         showCustomDesignFeature = false

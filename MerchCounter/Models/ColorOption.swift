@@ -18,6 +18,7 @@ struct ColorOption: Identifiable, Hashable {
         ColorOption(name: "White", color: .white),
         ColorOption(name: "Light Gray", color: Color(red: 0.83, green: 0.83, blue: 0.83)),
         ColorOption(name: "Gray", color: Color(red: 0.5, green: 0.5, blue: 0.5)),
+        ColorOption(name: "Gray-Blue", color: Color(red: 0.56, green: 0.64, blue: 0.71)),
         ColorOption(name: "Dark Gray", color: Color(red: 0.33, green: 0.33, blue: 0.33)),
         ColorOption(name: "Black", color: .black),
         ColorOption(name: "Yellow", color: .yellow),

@@ -18,7 +18,7 @@ MerchCounter/
 ├── Services/
 │   ├── GoogleSheetsService.swift  # OAuth2 JWT + Sheets API append/headers
 │   ├── WeatherService.swift       # Open-Meteo API, cached 30 min, 10s timeout
-│   └── SubmissionQueue.swift      # Actor, local JSON file, background upload
+│   └── SubmissionQueue.swift      # Actor, local JSON file, background upload, cumulative counters
 └── Views/
     ├── SurveyFormView.swift       # Main form + SegmentedControl, RadioGroup, MultiSelectGrid
     └── ColorSwatchPicker.swift    # Color swatch grid with custom tags
@@ -28,11 +28,11 @@ MerchCounter/
 
 1. User fills form → taps Submit
 2. Weather fetched (best-effort, cached 30 min)
-3. `SubmissionQueue.shared.add(record)` → saves to `Documents/submission_queue.json`
-4. Haptic feedback (heavy impact), form resets immediately, toast "Saved!" shown for 1.5s, auto-scrolls to top
-5. Button stays disabled for 2s cooldown to prevent double-tap
+3. `SubmissionQueue.shared.add(record)` → saves to `Documents/submission_queue.json`, increments cumulative counter (UserDefaults)
+4. Haptic feedback (heavy impact), form resets to empty, toast "Saved!" shown for 1.5s, auto-scrolls to top
+5. Button disabled while submitting (no double-tap)
 6. Queue auto-flushes in background to Google Sheets
-7. Orange badge in nav bar shows pending count
+7. Orange badge in nav bar shows pending count; nav title shows cumulative "Total X Today Y"
 
 ## Google Sheets
 
@@ -48,11 +48,11 @@ MerchCounter/
 - Custom `SegmentedControl` with slider highlight instead of system Picker (reliable yellow bg)
 - Custom inputs via alert popups (not inline)
 - "+" buttons styled as capsule/chip, last item in grid
+- Empty form on launch and after submit — no pre-selected defaults
 - Demographics: optional field (not required for submit)
 - Weather: auto-fetched, gracefully falls back to cached/"Unknown" offline
-- Pre-selected defaults reduce tap count (Gender=Male, Age=30, Merch=Hoodie, Garment=Black, Print=White, Design=[San Francisco, California])
 - Yellow accent with black text for high contrast in sunlight
-- Nav title shows "Total X Today Y" — submission counters instead of weather
+- Nav title shows "Total X Today Y" — cumulative counters (UserDefaults), synced from sheet on launch with `max()`, never decremented
 - Project uses `PBXFileSystemSynchronizedRootGroup` — new files in `MerchCounter/` auto-included
 
 ## Build Requirements
