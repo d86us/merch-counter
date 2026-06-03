@@ -46,7 +46,9 @@ struct SurveyFormView: View {
                     }
                     commentSection
                 }
-                .padding()
+                .padding(.horizontal)
+                .padding(.vertical, 12)
+                .padding(.bottom, 50)
                 .id("top")
             }
             .task {
@@ -117,10 +119,11 @@ struct SurveyFormView: View {
     private var genderSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionLabel("Gender")
-            segmentedButtonRow(options: ["Male", "Female"], selection: Binding(
+            SegmentedControl(options: ["Male", "Female"], selection: Binding(
                 get: { s.gender },
                 set: { s.gender = $0 }
-            ))
+            ), icons: ["Male": "figure.stand", "Female": "figure.stand.dress"])
+            .frame(height: 36)
         }
     }
 
@@ -192,10 +195,11 @@ struct SurveyFormView: View {
     private var modeSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionLabel("Mode")
-            segmentedButtonRow(options: FormState.modeOptions, stringSelection: Binding(
-                get: { s.mode },
-                set: { s.mode = $0 }
-            ))
+            SegmentedControl(options: FormState.modeOptions, selection: Binding(
+                get: { Optional(s.mode) },
+                set: { if let v = $0 { s.mode = v } }
+            ), icons: ["Wearing": "tshirt", "Carrying Bag": "bag"])
+            .frame(height: 36)
         }
     }
 
@@ -234,7 +238,7 @@ struct SurveyFormView: View {
                 AnyView(Button {
                     showMerchTypeAlert = true
                 } label: {
-                    Text("+")
+                    Text("Other...")
                         .appFont(.medium)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 10)
@@ -280,17 +284,10 @@ struct SurveyFormView: View {
                     let isSelected = model.wrappedValue.image.contains(option)
                     Button {
                         UISelectionFeedbackGenerator().selectionChanged()
-                        if option == "No" {
-                            model.wrappedValue.image = ["No"]
+                        if isSelected {
+                            model.wrappedValue.image.remove(option)
                         } else {
-                            var updated = model.wrappedValue.image
-                            updated.remove("No")
-                            if isSelected {
-                                updated.remove(option)
-                            } else {
-                                updated.insert(option)
-                            }
-                            model.wrappedValue.image = updated
+                            model.wrappedValue.image.insert(option)
                         }
                     } label: {
                         Text(option)
@@ -305,7 +302,7 @@ struct SurveyFormView: View {
                 Button {
                     showImageAlert = true
                 } label: {
-                    Text("+")
+                    Text("Other...")
                         .appFont()
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
@@ -336,7 +333,7 @@ struct SurveyFormView: View {
                 AnyView(Button {
                     showTypographyAlert = true
                 } label: {
-                    Text("+")
+                    Text("Other...")
                         .appFont()
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
@@ -361,7 +358,7 @@ struct SurveyFormView: View {
 
     private var commentSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            sectionLabel("Comment")
+            sectionLabel("Note")
             if !s.comments.isEmpty {
                 FlowLayout(spacing: 6) {
                     ForEach(s.comments, id: \.self) { comment in
@@ -386,7 +383,7 @@ struct SurveyFormView: View {
             Button {
                 showCommentAlert = true
             } label: {
-                Text("+")
+                Text("Add Note...")
                     .appFont()
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
@@ -468,6 +465,7 @@ struct SurveyFormView: View {
 struct SegmentedControl: View {
     let options: [String]
     @Binding var selection: String?
+    var icons: [String: String] = [:]
 
     var body: some View {
         GeometryReader { geo in
@@ -485,15 +483,21 @@ struct SegmentedControl: View {
 
                 HStack(spacing: 0) {
                     ForEach(Array(options.enumerated()), id: \.offset) { index, option in
-                        Text(option)
-                            .appFont(.medium)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .foregroundColor(selection == option ? .black : .primary)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                UISelectionFeedbackGenerator().selectionChanged()
-                                selection = option
+                        HStack(spacing: 4) {
+                            if let icon = icons[option] {
+                                Image(systemName: icon)
+                                    .appFont(.medium)
                             }
+                            Text(option)
+                                .appFont(.medium)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .foregroundColor(selection == option ? .black : .primary)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            UISelectionFeedbackGenerator().selectionChanged()
+                            selection = option
+                        }
                     }
                 }
             }

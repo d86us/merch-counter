@@ -57,7 +57,7 @@ struct SurveyRecord: Codable {
         matchingDesigns = try c.decodeIfPresent(String.self, forKey: .matchingDesigns) ?? ""
         mode = try c.decodeIfPresent(String.self, forKey: .mode) ?? "Wearing"
         bagSizes = try c.decodeIfPresent([String].self, forKey: .bagSizes) ?? []
-        image = try c.decodeIfPresent(String.self, forKey: .image) ?? "No"
+        image = try c.decodeIfPresent(String.self, forKey: .image) ?? ""
         typography = try c.decodeIfPresent([String].self, forKey: .typography) ?? []
         weather = try c.decodeIfPresent(String.self, forKey: .weather)
         temperature = try c.decodeIfPresent(String.self, forKey: .temperature)
@@ -86,13 +86,13 @@ struct SurveyRecord: Codable {
             timeString,
             dash(weather ?? ""),
             dash(temperature ?? ""),
-            gender,
-            ageGroup,
-            race,
-            group,
+            dash(gender),
+            dash(ageGroup),
+            dash(race),
+            dash(group),
             dash(groupCount),
             dash(matchingDesigns),
-            mode,
+            dash(mode),
             dash(bagSizes.joined(separator: "; ")),
             dash(image),
             dash(typography.joined(separator: "; ")),

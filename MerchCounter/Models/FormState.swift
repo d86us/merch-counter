@@ -20,7 +20,7 @@ class FormState {
     var showCustomPrintColor = false
     var customPrintColorInput = ""
 
-    var image: Set<String> = ["No"]
+    var image: Set<String> = []
     var customImageTypes: [String] = []
     var showCustomImage = false
     var customImageInput = ""
@@ -55,7 +55,7 @@ class FormState {
     var submitSuccess = false
 
     static let merchTypeOptions = ["Hoodie", "T-Shirt", "Sweatshirt", "Jacket", "Baseball Hat", "Winter Hat", "Bag"]
-    static let imageOptions = ["No", "Golden Gate Bridge", "USA Flag", "Cable Cart"]
+    static let imageOptions = ["Golden Gate Bridge", "USA Flag", "CA Flag", "Cable Cart", "Bear"]
     static let typographyOptions = ["San Francisco", "California", "SF", "CA", "Bay Area", "Since 1850", "USA"]
 
     var isReady: Bool {
@@ -141,7 +141,7 @@ class FormState {
         printColors = []
         customPrintColorInput = ""
         showCustomPrintColor = false
-        image = ["No"]
+        image = []
         customImageTypes = []
         customImageInput = ""
         showCustomImage = false
