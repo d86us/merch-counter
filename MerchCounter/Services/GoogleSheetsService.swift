@@ -132,24 +132,151 @@ final class GoogleSheetsService: @unchecked Sendable {
     // MARK: - Sheet Operations
 
     private func ensureHeaders(token: String) async throws {
+        let existing = try await fetchHeaders(token: token)
+        print("[Migration] Existing headers: \(existing ?? [])")
+        print("[Migration] Expected headers: \(SurveyRecord.sheetHeaders)")
+
+        if existing == SurveyRecord.sheetHeaders {
+            print("[Migration] Headers match — no migration needed")
+            return
+        }
+
+        if let existing, isOldHeaderFormat(existing) {
+            print("[Migration] Old format detected — running migration")
+            try await migrateSheet(token: token, oldHeaders: existing)
+        } else {
+            print("[Migration] No old format — writing headers fresh")
+            try await writeHeaders(token: token)
+        }
+    }
+
+    private func fetchHeaders(token: String) async throws -> [String]? {
         let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(spreadsheetId)/values/Sheet1!1:1")!
         var req = URLRequest(url: url)
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         let (data, resp) = try await session.data(for: req)
         guard let httpResp = resp as? HTTPURLResponse else {
+            print("[Migration] fetchHeaders: no HTTP response")
+            return nil
+        }
+        print("[Migration] fetchHeaders status: \(httpResp.statusCode)")
+        guard httpResp.statusCode == 200 else {
+            let text = String(data: data, encoding: .utf8) ?? ""
+            print("[Migration] fetchHeaders error: \(text)")
+            return nil
+        }
+        let range = try JSONDecoder().decode(ValueRange.self, from: data)
+        let headers = range.values?.first
+        print("[Migration] Fetched headers: \(headers ?? [])")
+        return headers
+    }
+
+    private func isOldHeaderFormat(_ headers: [String]) -> Bool {
+        let result = headers.contains("Design Features")
+        print("[Migration] isOldHeaderFormat (\(headers)) -> \(result)")
+        return result
+    }
+
+    private func migrateSheet(token: String, oldHeaders: [String]) async throws {
+        let sheetId = try await fetchSheetId(token: token)
+        let hasGroup = oldHeaders.contains("Group")
+        print("[Migration] migrateSheet: sheetId=\(sheetId) hasGroup=\(hasGroup) oldHeaders=\(oldHeaders)")
+
+        var requests: [[String: Any]] = []
+
+        if !hasGroup {
+            print("[Migration] Inserting 3 columns at index 7 (Group/Count/Matching)")
+            requests.append([
+                "insertDimension": [
+                    "range": [
+                        "sheetId": sheetId,
+                        "dimension": "COLUMNS",
+                        "startIndex": 7,
+                        "endIndex": 10
+                    ],
+                    "inheritFromBefore": false
+                ]
+            ])
+        }
+
+        print("[Migration] Inserting 2 columns at index 10 (Image/Typography)")
+        requests.append([
+            "insertDimension": [
+                "range": [
+                    "sheetId": sheetId,
+                    "dimension": "COLUMNS",
+                    "startIndex": 10,
+                    "endIndex": 12
+                ],
+                "inheritFromBefore": false
+            ]
+        ])
+
+        print("[Migration] Deleting old Design Features column at index 15")
+        requests.append([
+            "deleteDimension": [
+                "range": [
+                    "sheetId": sheetId,
+                    "dimension": "COLUMNS",
+                    "startIndex": 15,
+                    "endIndex": 16
+                ]
+            ]
+        ])
+
+        let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(spreadsheetId):batchUpdate")!
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: ["requests": requests])
+
+        let (data, resp) = try await session.data(for: req)
+        guard let httpResp = resp as? HTTPURLResponse else {
+            print("[Migration] batchUpdate: no HTTP response")
             throw ServiceError.invalidResponse
         }
-
-        if httpResp.statusCode == 200 {
-            let range = try JSONDecoder().decode(ValueRange.self, from: data)
-            if !(range.values?.isEmpty ?? true) {
-                return
-            }
+        let bodyText = String(data: data, encoding: .utf8) ?? ""
+        print("[Migration] batchUpdate status: \(httpResp.statusCode) body: \(bodyText)")
+        guard (200...299).contains(httpResp.statusCode) else {
+            throw ServiceError.apiError(httpResp.statusCode, "Migration failed: \(bodyText)")
         }
 
-        // Write headers
+        print("[Migration] Writing new headers after migration")
         try await writeHeaders(token: token)
+        print("[Migration] Migration complete")
+    }
+
+    private func fetchSheetId(token: String) async throws -> Int {
+        let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(spreadsheetId)")!
+        var req = URLRequest(url: url)
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, resp) = try await session.data(for: req)
+        guard let httpResp = resp as? HTTPURLResponse else {
+            print("[Migration] fetchSheetId: no HTTP response")
+            throw ServiceError.invalidResponse
+        }
+        print("[Migration] fetchSheetId status: \(httpResp.statusCode)")
+        guard httpResp.statusCode == 200 else {
+            let text = String(data: data, encoding: .utf8) ?? ""
+            print("[Migration] fetchSheetId error: \(text)")
+            throw ServiceError.invalidResponse
+        }
+        struct Spreadsheet: Decodable {
+            struct Properties: Decodable {
+                let sheetId: Int
+            }
+            struct Sheet: Decodable {
+                let properties: Properties
+            }
+            let sheets: [Sheet]
+        }
+        let spreadsheet = try JSONDecoder().decode(Spreadsheet.self, from: data)
+        let sid = spreadsheet.sheets.first?.properties.sheetId ?? 0
+        print("[Migration] Sheet ID: \(sid)")
+        return sid
     }
 
     private func writeHeaders(token: String) async throws {
@@ -159,15 +286,23 @@ final class GoogleSheetsService: @unchecked Sendable {
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
+        let headers = SurveyRecord.sheetHeaders
+        print("[Migration] Writing headers: \(headers)")
         let body = ValueRange(
             range: "Sheet1!1:1",
             majorDimension: "ROWS",
-            values: [SurveyRecord.sheetHeaders]
+            values: [headers]
         )
         req.httpBody = try JSONEncoder().encode(body)
 
-        let (_, resp) = try await session.data(for: req)
-        guard let httpResp = resp as? HTTPURLResponse, (200...299).contains(httpResp.statusCode) else {
+        let (data, resp) = try await session.data(for: req)
+        guard let httpResp = resp as? HTTPURLResponse else {
+            print("[Migration] writeHeaders: no HTTP response")
+            throw ServiceError.headerWriteFailed
+        }
+        let bodyText = String(data: data, encoding: .utf8) ?? ""
+        print("[Migration] writeHeaders status: \(httpResp.statusCode) body: \(bodyText)")
+        guard (200...299).contains(httpResp.statusCode) else {
             throw ServiceError.headerWriteFailed
         }
     }
@@ -240,6 +375,21 @@ struct ValueRange: Codable {
 }
 
 extension GoogleSheetsService {
+    func migrateIfNeeded() async {
+        print("[Migration] Starting migrateIfNeeded")
+        guard let token = try? await getValidToken() else {
+            print("[Migration] Failed to get valid token")
+            return
+        }
+        print("[Migration] Got token, calling ensureHeaders")
+        do {
+            try await ensureHeaders(token: token)
+            print("[Migration] ensureHeaders completed successfully")
+        } catch {
+            print("[Migration] ensureHeaders failed: \(error)")
+        }
+    }
+
     func fetchRowCounts() async throws -> (total: Int, today: Int) {
         let token = try await getValidToken()
         let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(spreadsheetId)/values/Sheet1!A:A")!
@@ -259,6 +409,7 @@ extension GoogleSheetsService {
         return (total, today)
     }
 }
+
 // MARK: - Errors
 
 enum ServiceError: Error, LocalizedError {

@@ -6,8 +6,10 @@ struct SurveyFormView: View {
     @State private var scrollToTop = false
     @State private var merchTypeInput = ""
     @State private var showMerchTypeAlert = false
-    @State private var designFeatureInput = ""
-    @State private var showDesignFeatureAlert = false
+    @State private var imageInput = ""
+    @State private var showImageAlert = false
+    @State private var typographyInput = ""
+    @State private var showTypographyAlert = false
     @State private var commentInput = ""
     @State private var showCommentAlert = false
     @State private var totalCount = 0
@@ -23,6 +25,7 @@ struct SurveyFormView: View {
                     genderSection
                     ageSection
                     raceSection
+                    groupSection
                     merchTypeSection($model)
                     garmentSection(title: "Garment",
                                   colors: $model.garmentColors,
@@ -34,13 +37,15 @@ struct SurveyFormView: View {
                                    showCustom: $model.showCustomPrintColor,
                                    customInput: $model.customPrintColorInput,
                                    onAdd: { model.addCustomPrintColor() })
-                    designFeatureSection($model)
+                    imageSection($model)
+                    typographySection($model)
                     commentSection
                 }
                 .padding()
                 .id("top")
             }
             .task {
+                await SubmissionQueue.shared.syncCumulativeFromSheet()
                 let (condition, temp) = await WeatherService.shared.currentWeather()
                 s.weather = condition
                 s.temperature = temp
@@ -138,6 +143,47 @@ struct SurveyFormView: View {
         SegmentedControl(options: options, selection: selection)
             .frame(height: 36)
     }
+
+    private func segmentedButtonRow(options: [String], stringSelection: Binding<String>) -> some View {
+        SegmentedControl(options: options, selection: Binding(
+            get: { stringSelection.wrappedValue },
+            set: { if let v = $0 { stringSelection.wrappedValue = v } }
+        ))
+        .frame(height: 36)
+    }
+
+    private var groupSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionLabel("Group")
+            segmentedButtonRow(options: FormState.groupOptions, stringSelection: Binding(
+                get: { s.group },
+                set: {
+                    s.group = $0
+                    if $0 == "Single" {
+                        s.groupCount = nil
+                        s.matchingDesigns = nil
+                    }
+                }
+            ))
+            if s.isGroup {
+                VStack(alignment: .leading, spacing: 10) {
+                    sectionLabel("Count")
+                    segmentedButtonRow(options: FormState.groupCountOptions, stringSelection: Binding(
+                        get: { s.groupCount ?? "2" },
+                        set: { s.groupCount = $0 }
+                    ))
+                }
+                VStack(alignment: .leading, spacing: 10) {
+                    sectionLabel("Matching Designs")
+                    segmentedButtonRow(options: ["Yes", "No"], stringSelection: Binding(
+                        get: { s.matchingDesigns ?? "Yes" },
+                        set: { s.matchingDesigns = $0 }
+                    ))
+                }
+            }
+        }
+    }
+
     private func merchTypeSection(_ model: Bindable<FormState>) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionLabel("Merch")
@@ -183,13 +229,70 @@ struct SurveyFormView: View {
         }
     }
 
-    private func designFeatureSection(_ model: Bindable<FormState>) -> some View {
+    private func imageSection(_ model: Bindable<FormState>) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            sectionLabel("Design")
-            let allOptions = FormState.designFeatureOptions + model.wrappedValue.customDesignFeatures
-            MultiSelectGrid(options: allOptions, selected: model.designFeatures, trailingButton: {
+            sectionLabel("Image")
+            let allOptions = FormState.imageOptions + model.wrappedValue.customImageTypes
+            FlowLayout(spacing: 8) {
+                ForEach(allOptions, id: \.self) { option in
+                    let isSelected = model.wrappedValue.image.contains(option)
+                    Button {
+                        UISelectionFeedbackGenerator().selectionChanged()
+                        if option == "No" {
+                            model.wrappedValue.image = ["No"]
+                        } else {
+                            var updated = model.wrappedValue.image
+                            updated.remove("No")
+                            if isSelected {
+                                updated.remove(option)
+                            } else {
+                                updated.insert(option)
+                            }
+                            model.wrappedValue.image = updated
+                        }
+                    } label: {
+                        Text(option)
+                            .font(.subheadline)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(isSelected ? Color.appAccent : Color(.systemGray6))
+                            .foregroundColor(isSelected ? .black : .primary)
+                            .clipShape(Capsule())
+                    }
+                }
+                Button {
+                    showImageAlert = true
+                } label: {
+                    Text("+")
+                        .appFont()
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color(.systemGray6))
+                        .foregroundColor(.primary)
+                        .clipShape(Capsule())
+                }
+            }
+            .alert("Add Image Type", isPresented: $showImageAlert) {
+                TextField("Image type", text: $imageInput)
+                Button("Cancel", role: .cancel) {
+                    imageInput = ""
+                }
+                Button("Add") {
+                    model.wrappedValue.customImageInput = imageInput
+                    model.wrappedValue.addCustomImage()
+                    imageInput = ""
+                }
+            }
+        }
+    }
+
+    private func typographySection(_ model: Bindable<FormState>) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionLabel("Typography")
+            let allOptions = FormState.typographyOptions + model.wrappedValue.customTypography
+            MultiSelectGrid(options: allOptions, selected: model.typography, trailingButton: {
                 AnyView(Button {
-                    showDesignFeatureAlert = true
+                    showTypographyAlert = true
                 } label: {
                     Text("+")
                         .appFont()
@@ -200,15 +303,15 @@ struct SurveyFormView: View {
                         .clipShape(Capsule())
                 })
             })
-            .alert("Add Design Feature", isPresented: $showDesignFeatureAlert) {
-                TextField("Design feature", text: $designFeatureInput)
+            .alert("Add Typography", isPresented: $showTypographyAlert) {
+                TextField("Typography", text: $typographyInput)
                 Button("Cancel", role: .cancel) {
-                    designFeatureInput = ""
+                    typographyInput = ""
                 }
                 Button("Add") {
-                    model.wrappedValue.customDesignFeatureInput = designFeatureInput
-                    model.wrappedValue.addCustomDesignFeature()
-                    designFeatureInput = ""
+                    model.wrappedValue.customTypographyInput = typographyInput
+                    model.wrappedValue.addCustomTypography()
+                    typographyInput = ""
                 }
             }
         }
@@ -288,11 +391,17 @@ struct SurveyFormView: View {
         s.temperature = temp
         let record = s.toRecord()
 
+        // Preserve all form values when group is not single
+        let formSnapshot = s.isGroup ? FormSnapshot(from: s) : nil
+
         await SubmissionQueue.shared.add(record)
         await updateStatsText()
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         showToast = true
         s.reset()
+        if let snap = formSnapshot {
+            snap.restore(into: s)
+        }
         scrollToTop.toggle()
         try? await Task.sleep(nanoseconds: 1_500_000_000)
         showToast = false
@@ -424,5 +533,61 @@ struct MultiSelectGrid: View {
                 button()
             }
         }
+    }
+}
+
+// MARK: - Form Snapshot
+
+private struct FormSnapshot {
+    let gender: String?
+    let ageGroup: String?
+    let race: String?
+    let merchType: String?
+    let customMerchTypes: [String]
+    let garmentColors: Set<String>
+    let printColors: Set<String>
+    let image: Set<String>
+    let customImageTypes: [String]
+    let typography: Set<String>
+    let customTypography: [String]
+    let group: String
+    let groupCount: String?
+    let matchingDesigns: String?
+    let comments: [String]
+
+    init(from s: FormState) {
+        gender = s.gender
+        ageGroup = s.ageGroup
+        race = s.race
+        merchType = s.merchType
+        customMerchTypes = s.customMerchTypes
+        garmentColors = s.garmentColors
+        printColors = s.printColors
+        image = s.image
+        customImageTypes = s.customImageTypes
+        typography = s.typography
+        customTypography = s.customTypography
+        group = s.group
+        groupCount = s.groupCount
+        matchingDesigns = s.matchingDesigns
+        comments = s.comments
+    }
+
+    func restore(into s: FormState) {
+        s.gender = gender
+        s.ageGroup = ageGroup
+        s.race = race
+        s.merchType = merchType
+        s.customMerchTypes = customMerchTypes
+        s.garmentColors = garmentColors
+        s.printColors = printColors
+        s.image = image
+        s.customImageTypes = customImageTypes
+        s.typography = typography
+        s.customTypography = customTypography
+        s.group = group
+        s.groupCount = groupCount
+        s.matchingDesigns = matchingDesigns
+        s.comments = comments
     }
 }

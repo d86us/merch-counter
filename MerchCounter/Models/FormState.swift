@@ -20,33 +20,41 @@ class FormState {
     var showCustomPrintColor = false
     var customPrintColorInput = ""
 
-    var designFeatures: Set<String> = []
-    var customDesignFeatures: [String] = []
-    var showCustomDesignFeature = false
-    var customDesignFeatureInput = ""
+    var image: Set<String> = ["No"]
+    var customImageTypes: [String] = []
+    var showCustomImage = false
+    var customImageInput = ""
+
+    var typography: Set<String> = []
+    var customTypography: [String] = []
+    var showCustomTypography = false
+    var customTypographyInput = ""
 
     var comments: [String] = []
 
-    let timestamp = Date()
+    var group: String = "Single"
+    var groupCount: String?
+    var matchingDesigns: String?
 
-    init() {}
+    var isGroup: Bool { group != "Single" }
 
     var weather: String?
     var temperature: String?
+
+    init() {}
+
+    static let groupOptions = ["Single", "Couple", "Family", "Friends"]
+    static let groupCountOptions = ["2", "3", "4", "5", "6+"]
 
     var isSubmitting = false
     var submitSuccess = false
 
     static let merchTypeOptions = ["T-Shirt", "Hoodie", "Baseball Hat", "Winter Hat", "Jacket", "Sweatshirt", "Bag"]
-    static let designFeatureOptions = [
-        "Animal", "Bay Area", "Bay Bridge", "Bear", "CA", "Cable Cart", "California", "California Flag",
-        "Golden Gate Bridge", "Illustration", "Non-SF Merch", "San Francisco", "Salesforce Tower",
-        "SF", "SF Baseball", "SF Football", "Sightseeing", "Since 1850", "Sport Font",
-        "Transamerica Pyramid", "Type Only", "USA", "USA Flag"
-    ]
+    static let imageOptions = ["No", "Golden Gate Bridge", "USA Flag", "Cable Cart"]
+    static let typographyOptions = ["San Francisco", "California", "SF", "CA", "Bay Area", "Since 1850", "USA"]
 
     var isReady: Bool {
-        gender != nil && ageGroup != nil && merchType != nil
+        gender != nil && ageGroup != nil && race != nil && merchType != nil
     }
 
     func addCustomMerch() {
@@ -74,13 +82,22 @@ class FormState {
         showCustomPrintColor = false
     }
 
-    func addCustomDesignFeature() {
-        let trimmed = customDesignFeatureInput.trimmingCharacters(in: .whitespaces)
+    func addCustomImage() {
+        let trimmed = customImageInput.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-        customDesignFeatures.append(trimmed)
-        designFeatures.insert(trimmed)
-        customDesignFeatureInput = ""
-        showCustomDesignFeature = false
+        customImageTypes.append(trimmed)
+        image = [trimmed]
+        customImageInput = ""
+        showCustomImage = false
+    }
+
+    func addCustomTypography() {
+        let trimmed = customTypographyInput.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        customTypography.append(trimmed)
+        typography.insert(trimmed)
+        customTypographyInput = ""
+        showCustomTypography = false
     }
 
     func toRecord() -> SurveyRecord {
@@ -89,12 +106,16 @@ class FormState {
             gender: gender ?? "",
             ageGroup: ageGroup ?? "",
             race: race ?? "",
+            group: group,
+            groupCount: isGroup ? groupCount ?? "" : "",
+            matchingDesigns: isGroup ? (matchingDesigns ?? "") : "",
+            image: image.sorted().joined(separator: "; "),
+            typography: Array(typography).sorted(),
             weather: weather,
             temperature: temperature,
             merchTypes: merchType.map { [$0] } ?? [],
             garmentColors: Array(garmentColors).sorted(),
             printColors: Array(printColors).sorted(),
-            designFeatures: Array(designFeatures).sorted(),
             comments: comments
         )
     }
@@ -113,10 +134,17 @@ class FormState {
         printColors = []
         customPrintColorInput = ""
         showCustomPrintColor = false
-        designFeatures = []
-        customDesignFeatures = []
-        customDesignFeatureInput = ""
-        showCustomDesignFeature = false
+        image = ["No"]
+        customImageTypes = []
+        customImageInput = ""
+        showCustomImage = false
+        typography = []
+        customTypography = []
+        customTypographyInput = ""
+        showCustomTypography = false
+        group = "Single"
+        groupCount = nil
+        matchingDesigns = nil
         weather = nil
         temperature = nil
         comments = []
