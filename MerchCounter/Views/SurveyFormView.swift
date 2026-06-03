@@ -32,6 +32,15 @@ struct SurveyFormView: View {
                     groupSection
                     modeSection
                     if s.mode == "Wearing" {
+                        if s.isGroup {
+                            VStack(alignment: .leading, spacing: 10) {
+                                sectionLabel("Matching Designs")
+                                segmentedButtonRow(options: ["Yes", "No"], stringSelection: Binding(
+                                    get: { s.matchingDesigns ?? "Yes" },
+                                    set: { s.matchingDesigns = $0 }
+                                ))
+                            }
+                        }
                         merchTypeSection($model)
                         garmentSection(title: "Garment",
                                       colors: $model.garmentColors,
@@ -184,13 +193,6 @@ struct SurveyFormView: View {
                     segmentedButtonRow(options: FormState.groupCountOptions, stringSelection: Binding(
                         get: { s.groupCount ?? "2" },
                         set: { s.groupCount = $0 }
-                    ))
-                }
-                VStack(alignment: .leading, spacing: 10) {
-                    sectionLabel("Matching Designs")
-                    segmentedButtonRow(options: ["Yes", "No"], stringSelection: Binding(
-                        get: { s.matchingDesigns ?? "Yes" },
-                        set: { s.matchingDesigns = $0 }
                     ))
                 }
             }
