@@ -1,0 +1,13 @@
+*.xcuserdata
+*.xcworkspace
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+DerivedData/
+build/
+.DS_Store
+*.ipa
+*.dSYM.zip
+*.dSYM
+GoogleServiceAccount.json
