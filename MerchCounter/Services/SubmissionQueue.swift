@@ -63,14 +63,11 @@ actor SubmissionQueue {
         let service = try? await MainActor.run { try GoogleSheetsService() }
         guard let counts = try? await service?.fetchRowCounts() else { return }
         let today = Self.dateFormatter.string(from: Date())
-        let localTodayDate = defaults.string(forKey: todayDateKey) ?? ""
-        defaults.set(max(defaults.integer(forKey: totalKey), counts.total), forKey: totalKey)
+        let pending = records.count
+        let todayPending = records.filter { Calendar.current.isDateInToday($0.timestamp) }.count
+        defaults.set(counts.total + pending, forKey: totalKey)
         defaults.set(today, forKey: todayDateKey)
-        if localTodayDate == today {
-            defaults.set(max(defaults.integer(forKey: todayKey), counts.today), forKey: todayKey)
-        } else {
-            defaults.set(counts.today, forKey: todayKey)
-        }
+        defaults.set(counts.today + todayPending, forKey: todayKey)
     }
 
     func flushInBackground() {

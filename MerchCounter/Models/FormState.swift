@@ -38,6 +38,9 @@ class FormState {
 
     var isGroup: Bool { group != "Single" }
 
+    var mode: String = "Wearing"
+    var bagSizes: Set<String> = []
+
     var weather: String?
     var temperature: String?
 
@@ -45,16 +48,18 @@ class FormState {
 
     static let groupOptions = ["Single", "Couple", "Family", "Friends"]
     static let groupCountOptions = ["2", "3", "4", "5", "6+"]
+    static let modeOptions = ["Wearing", "Carrying Bag"]
+    static let bagSizeOptions = ["Small", "Medium", "Big"]
 
     var isSubmitting = false
     var submitSuccess = false
 
-    static let merchTypeOptions = ["T-Shirt", "Hoodie", "Baseball Hat", "Winter Hat", "Jacket", "Sweatshirt", "Bag"]
+    static let merchTypeOptions = ["Hoodie", "T-Shirt", "Sweatshirt", "Jacket", "Baseball Hat", "Winter Hat", "Bag"]
     static let imageOptions = ["No", "Golden Gate Bridge", "USA Flag", "Cable Cart"]
     static let typographyOptions = ["San Francisco", "California", "SF", "CA", "Bay Area", "Since 1850", "USA"]
 
     var isReady: Bool {
-        gender != nil && ageGroup != nil && race != nil && merchType != nil
+        gender != nil && ageGroup != nil && race != nil && (merchType != nil || mode == "Carrying Bag")
     }
 
     func addCustomMerch() {
@@ -109,13 +114,15 @@ class FormState {
             group: group,
             groupCount: isGroup ? groupCount ?? "" : "",
             matchingDesigns: isGroup ? (matchingDesigns ?? "") : "",
-            image: image.sorted().joined(separator: "; "),
-            typography: Array(typography).sorted(),
+            mode: mode,
+            bagSizes: mode == "Carrying Bag" ? Array(bagSizes).sorted() : [],
+            image: mode == "Carrying Bag" ? "" : image.sorted().joined(separator: "; "),
+            typography: mode == "Carrying Bag" ? [] : Array(typography).sorted(),
             weather: weather,
             temperature: temperature,
             merchTypes: merchType.map { [$0] } ?? [],
-            garmentColors: Array(garmentColors).sorted(),
-            printColors: Array(printColors).sorted(),
+            garmentColors: mode == "Carrying Bag" ? [] : Array(garmentColors).sorted(),
+            printColors: mode == "Carrying Bag" ? [] : Array(printColors).sorted(),
             comments: comments
         )
     }
@@ -145,6 +152,8 @@ class FormState {
         group = "Single"
         groupCount = nil
         matchingDesigns = nil
+        mode = "Wearing"
+        bagSizes = []
         weather = nil
         temperature = nil
         comments = []

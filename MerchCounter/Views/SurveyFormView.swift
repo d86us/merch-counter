@@ -26,19 +26,24 @@ struct SurveyFormView: View {
                     ageSection
                     raceSection
                     groupSection
-                    merchTypeSection($model)
-                    garmentSection(title: "Garment",
-                                  colors: $model.garmentColors,
-                                  showCustom: $model.showCustomGarmentColor,
-                                  customInput: $model.customGarmentColorInput,
-                                  onAdd: { model.addCustomGarmentColor() })
-                    garmentSection(title: "Print",
-                                   colors: $model.printColors,
-                                   showCustom: $model.showCustomPrintColor,
-                                   customInput: $model.customPrintColorInput,
-                                   onAdd: { model.addCustomPrintColor() })
-                    imageSection($model)
-                    typographySection($model)
+                    modeSection
+                    if s.mode == "Wearing" {
+                        merchTypeSection($model)
+                        garmentSection(title: "Garment",
+                                      colors: $model.garmentColors,
+                                      showCustom: $model.showCustomGarmentColor,
+                                      customInput: $model.customGarmentColorInput,
+                                      onAdd: { model.addCustomGarmentColor() })
+                        garmentSection(title: "Print",
+                                       colors: $model.printColors,
+                                       showCustom: $model.showCustomPrintColor,
+                                       customInput: $model.customPrintColorInput,
+                                       onAdd: { model.addCustomPrintColor() })
+                        imageSection($model)
+                        typographySection($model)
+                    } else {
+                        bagSizeSection($model)
+                    }
                     commentSection
                 }
                 .padding()
@@ -132,7 +137,7 @@ struct SurveyFormView: View {
     private var raceSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionLabel("Demographic")
-            segmentedButtonRow(options: ["White", "Arab", "Latino", "Indian", "Asian", "Black"], selection: Binding(
+            segmentedButtonRow(options: ["White", "Latino", "Asian", "Indian", "Black", "Arab"], selection: Binding(
                 get: { s.race },
                 set: { s.race = $0 }
             ))
@@ -179,6 +184,43 @@ struct SurveyFormView: View {
                         get: { s.matchingDesigns ?? "Yes" },
                         set: { s.matchingDesigns = $0 }
                     ))
+                }
+            }
+        }
+    }
+
+    private var modeSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionLabel("Mode")
+            segmentedButtonRow(options: FormState.modeOptions, stringSelection: Binding(
+                get: { s.mode },
+                set: { s.mode = $0 }
+            ))
+        }
+    }
+
+    private func bagSizeSection(_ model: Bindable<FormState>) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionLabel("Bag Size")
+            FlowLayout(spacing: 8) {
+                ForEach(FormState.bagSizeOptions, id: \.self) { option in
+                    let isSelected = model.wrappedValue.bagSizes.contains(option)
+                    Button {
+                        UISelectionFeedbackGenerator().selectionChanged()
+                        if isSelected {
+                            model.wrappedValue.bagSizes.remove(option)
+                        } else {
+                            model.wrappedValue.bagSizes.insert(option)
+                        }
+                    } label: {
+                        Text(option)
+                            .font(.subheadline)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(isSelected ? Color.appAccent : Color(.systemGray6))
+                            .foregroundColor(isSelected ? .black : .primary)
+                            .clipShape(Capsule())
+                    }
                 }
             }
         }
@@ -553,6 +595,8 @@ private struct FormSnapshot {
     let group: String
     let groupCount: String?
     let matchingDesigns: String?
+    let mode: String
+    let bagSizes: Set<String>
     let comments: [String]
 
     init(from s: FormState) {
@@ -570,6 +614,8 @@ private struct FormSnapshot {
         group = s.group
         groupCount = s.groupCount
         matchingDesigns = s.matchingDesigns
+        mode = s.mode
+        bagSizes = s.bagSizes
         comments = s.comments
     }
 
@@ -588,6 +634,8 @@ private struct FormSnapshot {
         s.group = group
         s.groupCount = groupCount
         s.matchingDesigns = matchingDesigns
+        s.mode = mode
+        s.bagSizes = bagSizes
         s.comments = comments
     }
 }

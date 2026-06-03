@@ -8,6 +8,8 @@ struct SurveyRecord: Codable {
     let group: String
     let groupCount: String
     let matchingDesigns: String
+    let mode: String
+    let bagSizes: [String]
     let image: String
     let typography: [String]
     let weather: String?
@@ -19,11 +21,12 @@ struct SurveyRecord: Codable {
 
     enum CodingKeys: String, CodingKey {
         case timestamp, gender, ageGroup, race, group, groupCount, matchingDesigns
+        case mode, bagSizes
         case image, typography
         case weather, temperature, merchTypes, garmentColors, printColors, comments
     }
 
-    init(timestamp: Date, gender: String, ageGroup: String, race: String, group: String, groupCount: String, matchingDesigns: String, image: String, typography: [String], weather: String?, temperature: String?, merchTypes: [String], garmentColors: [String], printColors: [String], comments: [String]) {
+    init(timestamp: Date, gender: String, ageGroup: String, race: String, group: String, groupCount: String, matchingDesigns: String, mode: String, bagSizes: [String], image: String, typography: [String], weather: String?, temperature: String?, merchTypes: [String], garmentColors: [String], printColors: [String], comments: [String]) {
         self.timestamp = timestamp
         self.gender = gender
         self.ageGroup = ageGroup
@@ -31,6 +34,8 @@ struct SurveyRecord: Codable {
         self.group = group
         self.groupCount = groupCount
         self.matchingDesigns = matchingDesigns
+        self.mode = mode
+        self.bagSizes = bagSizes
         self.image = image
         self.typography = typography
         self.weather = weather
@@ -50,6 +55,8 @@ struct SurveyRecord: Codable {
         group = try c.decodeIfPresent(String.self, forKey: .group) ?? ""
         groupCount = try c.decodeIfPresent(String.self, forKey: .groupCount) ?? ""
         matchingDesigns = try c.decodeIfPresent(String.self, forKey: .matchingDesigns) ?? ""
+        mode = try c.decodeIfPresent(String.self, forKey: .mode) ?? "Wearing"
+        bagSizes = try c.decodeIfPresent([String].self, forKey: .bagSizes) ?? []
         image = try c.decodeIfPresent(String.self, forKey: .image) ?? "No"
         typography = try c.decodeIfPresent([String].self, forKey: .typography) ?? []
         weather = try c.decodeIfPresent(String.self, forKey: .weather)
@@ -73,27 +80,30 @@ struct SurveyRecord: Codable {
     }
 
     var sheetRowValues: [String] {
-        [
+        func dash(_ s: String) -> String { s.isEmpty ? "-" : s }
+        return [
             dateString,
             timeString,
-            weather ?? "",
-            temperature ?? "",
+            dash(weather ?? ""),
+            dash(temperature ?? ""),
             gender,
             ageGroup,
             race,
             group,
-            groupCount,
-            matchingDesigns,
-            image,
-            typography.joined(separator: "; "),
-            merchTypes.joined(separator: "; "),
-            garmentColors.joined(separator: "; "),
-            printColors.joined(separator: "; "),
-            comments.joined(separator: "; "),
+            dash(groupCount),
+            dash(matchingDesigns),
+            mode,
+            dash(bagSizes.joined(separator: "; ")),
+            dash(image),
+            dash(typography.joined(separator: "; ")),
+            dash(merchTypes.joined(separator: "; ")),
+            dash(garmentColors.joined(separator: "; ")),
+            dash(printColors.joined(separator: "; ")),
+            dash(comments.joined(separator: "; ")),
         ]
     }
 
     static var sheetHeaders: [String] {
-        ["Date", "Time", "Weather", "Temperature", "Gender", "Age", "Demographic", "Group", "Count", "Matching", "Image", "Typography", "Merch Types", "Garment Colors", "Print Colors", "Comment"]
+        ["Date", "Time", "Weather", "Temperature", "Gender", "Age", "Demographic", "Group", "Count", "Matching", "Mode", "Bag Sizes", "Image", "Typography", "Merch Types", "Garment Colors", "Print Colors", "Comment"]
     }
 }
