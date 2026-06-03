@@ -10,7 +10,8 @@ struct SurveyFormView: View {
     @State private var showDesignFeatureAlert = false
     @State private var commentInput = ""
     @State private var showCommentAlert = false
-    @State private var weatherText = "Loading…"
+    @State private var totalCount = 0
+    @State private var todayCount = 0
     @State private var pendingCount = 0
 
     var body: some View {
@@ -43,14 +44,15 @@ struct SurveyFormView: View {
                 let (condition, temp) = await WeatherService.shared.currentWeather()
                 s.weather = condition
                 s.temperature = temp
-                updateStatsText()
+                await updateStatsText()
             }
             .onReceive(NotificationCenter.default.publisher(for: .pendingCountChanged)) { note in
                 pendingCount = note.object as? Int ?? 0
+                Task { await updateStatsText() }
             }
             .onAppear {
                 Task { pendingCount = await SubmissionQueue.shared.count }
-                updateStatsText()
+                Task { await updateStatsText() }
             }
             .overlay(alignment: .bottom) {
                 if showToast {
@@ -69,9 +71,17 @@ struct SurveyFormView: View {
             .onChange(of: scrollToTop) { _, _ in
                 withAnimation { proxy.scrollTo("top", anchor: .top) }
             }
-            .navigationTitle(weatherText)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 4) {
+                        Text("\(totalCount)")
+                        Text("•")
+                        Text("\(todayCount)")
+                            .foregroundColor(Color.appAccent)
+                    }
+                    .appFont(.semibold)
+                }
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Clear") { s.reset() }
                         .foregroundColor(Color.appAccent)
@@ -279,8 +289,7 @@ struct SurveyFormView: View {
         let record = s.toRecord()
 
         await SubmissionQueue.shared.add(record)
-        incrementStats()
-        updateStatsText()
+        await updateStatsText()
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         showToast = true
         s.reset()
@@ -297,30 +306,9 @@ struct SurveyFormView: View {
             .textCase(.uppercase)
     }
 
-    private func updateStatsText() {
-        let defaults = UserDefaults.standard
-        let total = defaults.integer(forKey: "totalSubmissions")
-        let today = defaults.integer(forKey: "todaySubmissions")
-        weatherText = "Total \(total) Today \(today)"
-    }
-
-    private func incrementStats() {
-        let defaults = UserDefaults.standard
-        let total = defaults.integer(forKey: "totalSubmissions") + 1
-        defaults.set(total, forKey: "totalSubmissions")
-
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        let today = formatter.string(from: Date())
-        let lastDate = defaults.string(forKey: "lastSubmitDate")
-
-        if lastDate == today {
-            let count = defaults.integer(forKey: "todaySubmissions") + 1
-            defaults.set(count, forKey: "todaySubmissions")
-        } else {
-            defaults.set(1, forKey: "todaySubmissions")
-            defaults.set(today, forKey: "lastSubmitDate")
-        }
+    private func updateStatsText() async {
+        totalCount = await SubmissionQueue.shared.count
+        todayCount = await SubmissionQueue.shared.todayCount
     }
 }
 

@@ -20,6 +20,10 @@ actor SubmissionQueue {
 
     var count: Int { records.count }
 
+    var todayCount: Int {
+        records.filter { Calendar.current.isDateInToday($0.timestamp) }.count
+    }
+
     func add(_ record: SurveyRecord) {
         records.append(record)
         save()
