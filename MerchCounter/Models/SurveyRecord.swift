@@ -17,16 +17,17 @@ struct SurveyRecord: Codable {
     let merchTypes: [String]
     let garmentColors: [String]
     let printColors: [String]
+    let printPosition: [String]
     let comments: [String]
 
     enum CodingKeys: String, CodingKey {
         case timestamp, gender, ageGroup, race, group, groupCount, matchingDesigns
         case mode, bagSizes
         case image, typography
-        case weather, temperature, merchTypes, garmentColors, printColors, comments
+        case weather, temperature, merchTypes, garmentColors, printColors, printPosition, comments
     }
 
-    init(timestamp: Date, gender: String, ageGroup: String, race: String, group: String, groupCount: String, matchingDesigns: String, mode: String, bagSizes: [String], image: String, typography: [String], weather: String?, temperature: String?, merchTypes: [String], garmentColors: [String], printColors: [String], comments: [String]) {
+    init(timestamp: Date, gender: String, ageGroup: String, race: String, group: String, groupCount: String, matchingDesigns: String, mode: String, bagSizes: [String], image: String, typography: [String], weather: String?, temperature: String?, merchTypes: [String], garmentColors: [String], printColors: [String], printPosition: [String], comments: [String]) {
         self.timestamp = timestamp
         self.gender = gender
         self.ageGroup = ageGroup
@@ -43,6 +44,7 @@ struct SurveyRecord: Codable {
         self.merchTypes = merchTypes
         self.garmentColors = garmentColors
         self.printColors = printColors
+        self.printPosition = printPosition
         self.comments = comments
     }
 
@@ -64,6 +66,7 @@ struct SurveyRecord: Codable {
         merchTypes = try c.decode([String].self, forKey: .merchTypes)
         garmentColors = try c.decode([String].self, forKey: .garmentColors)
         printColors = try c.decode([String].self, forKey: .printColors)
+        printPosition = try c.decodeIfPresent([String].self, forKey: .printPosition) ?? []
         comments = try c.decode([String].self, forKey: .comments)
     }
 
@@ -99,11 +102,12 @@ struct SurveyRecord: Codable {
             dash(merchTypes.joined(separator: "; ")),
             dash(garmentColors.joined(separator: "; ")),
             dash(printColors.joined(separator: "; ")),
+            dash(printPosition.joined(separator: "; ")),
             dash(comments.joined(separator: "; ")),
         ]
     }
 
     static var sheetHeaders: [String] {
-        ["Date", "Time", "Weather", "Temperature", "Gender", "Age", "Demographic", "Group", "Count", "Matching", "Mode", "Bag Sizes", "Image", "Typography", "Merch Types", "Garment Colors", "Print Colors", "Comment"]
+        ["Date", "Time", "Weather", "Temperature", "Gender", "Age", "Demographic", "Group", "Count", "Matching", "Mode", "Bag Sizes", "Image", "Typography", "Merch Types", "Garment Colors", "Print Colors", "Print Position", "Comment"]
     }
 }

@@ -6,6 +6,10 @@ struct SurveyFormView: View {
     @State private var scrollToTop = false
     @State private var merchTypeInput = ""
     @State private var showMerchTypeAlert = false
+    @State private var printColorInput = ""
+    @State private var showPrintColorAlert = false
+    @State private var printPositionInput = ""
+    @State private var showPrintPositionAlert = false
     @State private var imageInput = ""
     @State private var showImageAlert = false
     @State private var typographyInput = ""
@@ -39,6 +43,7 @@ struct SurveyFormView: View {
                                        showCustom: $model.showCustomPrintColor,
                                        customInput: $model.customPrintColorInput,
                                        onAdd: { model.addCustomPrintColor() })
+                        printPositionSection($model)
                         imageSection($model)
                         typographySection($model)
                     } else {
@@ -272,6 +277,56 @@ struct SurveyFormView: View {
                 customInput: customInput,
                 onAdd: onAdd
             )
+        }
+    }
+
+    private func printPositionSection(_ model: Bindable<FormState>) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionLabel("Print Position")
+            let allOptions = FormState.printPositionOptions + model.wrappedValue.customPrintPosition
+            FlowLayout(spacing: 8) {
+                ForEach(allOptions, id: \.self) { option in
+                    let isSelected = model.wrappedValue.printPosition.contains(option)
+                    Button {
+                        UISelectionFeedbackGenerator().selectionChanged()
+                        if isSelected {
+                            model.wrappedValue.printPosition.remove(option)
+                        } else {
+                            model.wrappedValue.printPosition.insert(option)
+                        }
+                    } label: {
+                        Text(option)
+                            .font(.subheadline)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(isSelected ? Color.appAccent : Color(.systemGray6))
+                            .foregroundColor(isSelected ? .black : .primary)
+                            .clipShape(Capsule())
+                    }
+                }
+                Button {
+                    showPrintPositionAlert = true
+                } label: {
+                    Text("Other...")
+                        .appFont()
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color(.systemGray6))
+                        .foregroundColor(.primary)
+                        .clipShape(Capsule())
+                }
+            }
+            .alert("Add Print Position", isPresented: $showPrintPositionAlert) {
+                TextField("Print position", text: $printPositionInput)
+                Button("Cancel", role: .cancel) {
+                    printPositionInput = ""
+                }
+                Button("Add") {
+                    model.wrappedValue.customPrintPositionInput = printPositionInput
+                    model.wrappedValue.addCustomPrintPosition()
+                    printPositionInput = ""
+                }
+            }
         }
     }
 
@@ -592,6 +647,8 @@ private struct FormSnapshot {
     let customMerchTypes: [String]
     let garmentColors: Set<String>
     let printColors: Set<String>
+    let printPosition: Set<String>
+    let customPrintPosition: [String]
     let image: Set<String>
     let customImageTypes: [String]
     let typography: Set<String>
@@ -611,6 +668,8 @@ private struct FormSnapshot {
         customMerchTypes = s.customMerchTypes
         garmentColors = s.garmentColors
         printColors = s.printColors
+        printPosition = s.printPosition
+        customPrintPosition = s.customPrintPosition
         image = s.image
         customImageTypes = s.customImageTypes
         typography = s.typography
@@ -631,6 +690,8 @@ private struct FormSnapshot {
         s.customMerchTypes = customMerchTypes
         s.garmentColors = garmentColors
         s.printColors = printColors
+        s.printPosition = printPosition
+        s.customPrintPosition = customPrintPosition
         s.image = image
         s.customImageTypes = customImageTypes
         s.typography = typography

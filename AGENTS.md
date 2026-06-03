@@ -39,7 +39,7 @@ MerchCounter/
 - **Bundle resource**: `GoogleServiceAccount.json` in `MerchCounter/Resources/` (excluded from git via `.gitignore`)
 - **Sheet ID**: Hardcoded in `GoogleSheetsService.init()`
 - **Writing**: `valueInputOption=RAW` (no date parsing)
-- **Columns**: `Date, Time, Weather, Temperature, Gender, Age, Demographic, Group, Count, Matching, Mode, Bag Sizes, Image, Typography, Merch Types, Garment Colors, Print Colors, Comment`
+- **Columns**: `Date, Time, Weather, Temperature, Gender, Age, Demographic, Group, Count, Matching, Mode, Bag Sizes, Image, Typography, Merch Types, Garment Colors, Print Colors, Print Position, Comment`
 
 ## Key Decisions
 

@@ -20,6 +20,11 @@ class FormState {
     var showCustomPrintColor = false
     var customPrintColorInput = ""
 
+    var printPosition: Set<String> = []
+    var customPrintPosition: [String] = []
+    var showCustomPrintPosition = false
+    var customPrintPositionInput = ""
+
     var image: Set<String> = []
     var customImageTypes: [String] = []
     var showCustomImage = false
@@ -55,6 +60,7 @@ class FormState {
     var submitSuccess = false
 
     static let merchTypeOptions = ["Hoodie", "T-Shirt", "Sweatshirt", "Jacket", "Baseball Hat", "Winter Hat", "Bag"]
+    static let printPositionOptions = ["Front", "Back", "Chest Small"]
     static let imageOptions = ["Golden Gate Bridge", "USA Flag", "CA Flag", "Cable Cart", "Bear"]
     static let typographyOptions = ["San Francisco", "California", "SF", "CA", "Bay Area", "Since 1850", "USA"]
 
@@ -85,6 +91,15 @@ class FormState {
         printColors.insert(trimmed)
         customPrintColorInput = ""
         showCustomPrintColor = false
+    }
+
+    func addCustomPrintPosition() {
+        let trimmed = customPrintPositionInput.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        customPrintPosition.append(trimmed)
+        printPosition.insert(trimmed)
+        customPrintPositionInput = ""
+        showCustomPrintPosition = false
     }
 
     func addCustomImage() {
@@ -123,6 +138,7 @@ class FormState {
             merchTypes: merchType.map { [$0] } ?? [],
             garmentColors: mode == "Carrying Bag" ? [] : Array(garmentColors).sorted(),
             printColors: mode == "Carrying Bag" ? [] : Array(printColors).sorted(),
+            printPosition: mode == "Carrying Bag" ? [] : Array(printPosition).sorted(),
             comments: comments
         )
     }
@@ -141,6 +157,10 @@ class FormState {
         printColors = []
         customPrintColorInput = ""
         showCustomPrintColor = false
+        printPosition = []
+        customPrintPosition = []
+        customPrintPositionInput = ""
+        showCustomPrintPosition = false
         image = []
         customImageTypes = []
         customImageInput = ""
