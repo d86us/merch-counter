@@ -2,11 +2,13 @@
 
 Tourist merch survey app for Fisherman's Wharf, SF. Collects demographics, clothing details, and weather; submits to Google Sheets. Offline-safe.
 
+**Repo**: `https://github.com/d86us/merch-counter`
+
 ## Architecture
 
 ```
 MerchCounter/
-├── Config.swift                # AppAccent color, .appFont() modifier
+├── Config.swift                # AppAccent (yellow), .appFont() modifier
 ├── ContentView.swift           # NavigationStack root
 ├── MerchCounterApp.swift       # @main, flushes pending queue on launch
 ├── Models/
@@ -18,7 +20,7 @@ MerchCounter/
 │   ├── WeatherService.swift       # Open-Meteo API, cached 30 min, async
 │   └── SubmissionQueue.swift      # Actor, local JSON file, background upload
 └── Views/
-    ├── SurveyFormView.swift       # Main form + RadioGroup, MultiSelectGrid
+    ├── SurveyFormView.swift       # Main form + SegmentedControl, RadioGroup, MultiSelectGrid
     └── ColorSwatchPicker.swift    # Color swatch grid with custom tags
 ```
 
@@ -27,21 +29,22 @@ MerchCounter/
 1. User fills form → taps Submit
 2. Weather fetched (best-effort, cached 30 min)
 3. `SubmissionQueue.shared.add(record)` → saves to `Documents/submission_queue.json`
-4. Form resets immediately, "Saved!" alert shown
+4. Form resets immediately, snack bar "Saved!" shown for 3s, scrolls to top
 5. Queue auto-flushes in background to Google Sheets
 6. Orange badge in nav bar shows pending count
 
 ## Google Sheets
 
-- **Bundle resource**: `GoogleServiceAccount.json` in `MerchCounter/Resources/`
+- **Bundle resource**: `GoogleServiceAccount.json` in `MerchCounter/Resources/` (excluded from git via `.gitignore`)
 - **Sheet ID**: Hardcoded in `GoogleSheetsService.init()`
 - **Writing**: `valueInputOption=RAW` (no date parsing)
-- **Columns**: `Date, Time, Weather, Temperature, Gender, Age, Demographic, Merch Types, Garment Colors, Print Colors, Design Features, Comments`
+- **Columns**: `Date, Time, Weather, Temperature, Gender, Age, Demographic, Merch Types, Garment Colors, Print Colors, Design Features, Comment`
 
 ## Key Decisions
 
-- `Color.appAccent` (defined in `Config.swift`) — single source for all highlight blue
+- `Color.appAccent` (yellow, defined in `Config.swift`) — single source for all highlight color
 - `.appFont()` (`.subheadline` with weight param) — unified font everywhere
+- Custom `SegmentedControl` with slider highlight instead of system Picker (reliable yellow bg)
 - Custom inputs via alert popups (not inline)
 - "+" buttons styled as capsule/chip, last item in grid
 - Demographics: optional field (not required for submit)
