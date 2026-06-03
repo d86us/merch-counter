@@ -86,7 +86,7 @@ struct SurveyFormView: View {
                 ToolbarItem(placement: .principal) {
                     HStack(spacing: 4) {
                         Text("\(totalCount)")
-                        Text("•")
+                        Text("/")
                         Text("\(todayCount)")
                             .foregroundColor(Color.appAccent)
                     }
