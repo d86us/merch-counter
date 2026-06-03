@@ -3,6 +3,8 @@ import Foundation
 actor WeatherService {
     static let shared = WeatherService()
 
+    private let session: URLSession
+
     private struct OpenMeteoResponse: Decodable {
         struct CurrentWeather: Decodable {
             let temperature: Double
@@ -23,6 +25,12 @@ actor WeatherService {
     private var cachedWeather: (condition: String, temperature: String)?
     private var cachedFetchTime: Date?
 
+    private init() {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 10
+        session = URLSession(configuration: config)
+    }
+
     private var shouldRefresh: Bool {
         guard let last = cachedFetchTime else { return true }
         return Date().timeIntervalSince(last) >= 1800
@@ -40,7 +48,7 @@ actor WeatherService {
         guard let url = URL(string: urlString) else { return ("Unknown", "") }
 
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let (data, _) = try await session.data(from: url)
             let decoded = try JSONDecoder().decode(OpenMeteoResponse.self, from: data)
             let condition = Self.label(for: decoded.currentWeather.weatherCode)
             let temp = Int(decoded.currentWeather.temperature.rounded())

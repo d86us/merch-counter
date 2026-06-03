@@ -41,15 +41,16 @@ struct SurveyFormView: View {
             }
             .task {
                 let (condition, temp) = await WeatherService.shared.currentWeather()
-                weatherText = "\(condition) \(temp)"
                 s.weather = condition
                 s.temperature = temp
+                updateStatsText()
             }
             .onReceive(NotificationCenter.default.publisher(for: .pendingCountChanged)) { note in
                 pendingCount = note.object as? Int ?? 0
             }
             .onAppear {
                 Task { pendingCount = await SubmissionQueue.shared.count }
+                updateStatsText()
             }
             .overlay(alignment: .bottom) {
                 if showToast {
@@ -278,12 +279,15 @@ struct SurveyFormView: View {
         let record = s.toRecord()
 
         await SubmissionQueue.shared.add(record)
-        s.isSubmitting = false
+        incrementStats()
+        updateStatsText()
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         showToast = true
-        try? await Task.sleep(nanoseconds: 3_000_000_000)
-        showToast = false
         s.reset()
         scrollToTop.toggle()
+        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        showToast = false
+        s.isSubmitting = false
     }
 
     private func sectionLabel(_ text: String) -> some View {
@@ -291,6 +295,32 @@ struct SurveyFormView: View {
             .appFont(.semibold)
             .foregroundColor(.secondary)
             .textCase(.uppercase)
+    }
+
+    private func updateStatsText() {
+        let defaults = UserDefaults.standard
+        let total = defaults.integer(forKey: "totalSubmissions")
+        let today = defaults.integer(forKey: "todaySubmissions")
+        weatherText = "Total \(total) Today \(today)"
+    }
+
+    private func incrementStats() {
+        let defaults = UserDefaults.standard
+        let total = defaults.integer(forKey: "totalSubmissions") + 1
+        defaults.set(total, forKey: "totalSubmissions")
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let today = formatter.string(from: Date())
+        let lastDate = defaults.string(forKey: "lastSubmitDate")
+
+        if lastDate == today {
+            let count = defaults.integer(forKey: "todaySubmissions") + 1
+            defaults.set(count, forKey: "todaySubmissions")
+        } else {
+            defaults.set(1, forKey: "todaySubmissions")
+            defaults.set(today, forKey: "lastSubmitDate")
+        }
     }
 }
 
@@ -322,6 +352,7 @@ struct SegmentedControl: View {
                             .foregroundColor(selection == option ? .black : .primary)
                             .contentShape(Rectangle())
                             .onTapGesture {
+                                UISelectionFeedbackGenerator().selectionChanged()
                                 selection = option
                             }
                     }
@@ -355,6 +386,7 @@ struct RadioGroup: View {
         LazyVGrid(columns: gridItems, spacing: 8) {
             ForEach(options, id: \.self) { option in
                 Button {
+                    UISelectionFeedbackGenerator().selectionChanged()
                     selection = option
                 } label: {
                     Text(option)
@@ -384,6 +416,7 @@ struct MultiSelectGrid: View {
             ForEach(options, id: \.self) { option in
                 let isSelected = selected.contains(option)
                 Button {
+                    UISelectionFeedbackGenerator().selectionChanged()
                     if isSelected {
                         selected.remove(option)
                     } else {

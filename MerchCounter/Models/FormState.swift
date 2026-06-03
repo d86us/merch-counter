@@ -12,15 +12,15 @@ class FormState {
     var showCustomMerch = false
     var customMerchInput = ""
 
-    var garmentColors: Set<String> = []
+    var garmentColors: Set<String> = ["Black"]
     var showCustomGarmentColor = false
     var customGarmentColorInput = ""
 
-    var printColors: Set<String> = []
+    var printColors: Set<String> = ["White"]
     var showCustomPrintColor = false
     var customPrintColorInput = ""
 
-    var designFeatures: Set<String> = []
+    var designFeatures: Set<String> = ["San Francisco", "California"]
     var customDesignFeatures: [String] = []
     var showCustomDesignFeature = false
     var customDesignFeatureInput = ""
@@ -28,6 +28,13 @@ class FormState {
     var comments: [String] = []
 
     let timestamp = Date()
+
+    init() {
+        gender = "Male"
+        ageGroup = "30"
+        race = "White"
+        merchType = "Hoodie"
+    }
 
     var weather: String?
     var temperature: String?
@@ -98,20 +105,20 @@ class FormState {
     }
 
     func reset() {
-        gender = nil
-        ageGroup = nil
-        race = nil
-        merchType = nil
+        gender = "Male"
+        ageGroup = "30"
+        race = "White"
+        merchType = "Hoodie"
         customMerchTypes = []
         customMerchInput = ""
         showCustomMerch = false
-        garmentColors = []
+        garmentColors = ["Black"]
         customGarmentColorInput = ""
         showCustomGarmentColor = false
-        printColors = []
+        printColors = ["White"]
         customPrintColorInput = ""
         showCustomPrintColor = false
-        designFeatures = []
+        designFeatures = ["San Francisco", "California"]
         customDesignFeatures = []
         customDesignFeatureInput = ""
         showCustomDesignFeature = false

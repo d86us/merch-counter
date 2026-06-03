@@ -43,6 +43,6 @@ struct SurveyRecord: Codable {
     }
 
     static var sheetHeaders: [String] {
-        ["Date", "Time", "Weather", "Temperature", "Gender", "Age", "Race", "Merch Types", "Garment Colors", "Print Colors", "Design Features", "Comment"]
+        ["Date", "Time", "Weather", "Temperature", "Gender", "Age", "Demographic", "Merch Types", "Garment Colors", "Print Colors", "Design Features", "Comment"]
     }
 }

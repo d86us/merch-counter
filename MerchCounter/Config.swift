@@ -1,7 +1,5 @@
 import SwiftUI
 
-let serviceAccountFileName = "GoogleServiceAccount"
-
 extension Color {
     static let appAccent = Color(red: 1, green: 0.8, blue: 0)
 }

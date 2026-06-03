@@ -58,6 +58,7 @@ struct ColorSwatchPicker: View {
 
     var addCustomButton: some View {
         Button {
+            UISelectionFeedbackGenerator().selectionChanged()
             showColorAlert = true
         } label: {
             Circle()
@@ -85,6 +86,7 @@ struct ColorSwatchPicker: View {
     func swatch(_ option: ColorOption) -> some View {
         let isSelected = selected.contains(option.name)
         return Button {
+            UISelectionFeedbackGenerator().selectionChanged()
             if isSelected {
                 selected.remove(option.name)
             } else {
