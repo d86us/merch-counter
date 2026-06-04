@@ -15,6 +15,22 @@ struct SessionObservationView: View {
     @State private var impactGenerator = UIImpactFeedbackGenerator(style: .heavy)
     @State private var now: Date = Date()
 
+    // Persistence - delete this block and saveState/loadState/clearState calls to remove
+    private struct PersistedState: Codable {
+        var intervalStart: Date?
+        var currentSessionNumber = 0, cumulativeTotal = 0, cycleCount = 0
+        var weather: String?, temperature: String?
+        var pc_ccSolo = 0, pc_ccGroup = 0, pc_ccFamily = 0
+        var pc_wSolo = 0, pc_wGroup = 0, pc_wFamily = 0
+        var enSolo = 0, enGroup = 0, enFamily = 0
+        var lwbSolo = 0, lwbGroup = 0, lwbFamily = 0
+        var bagSmall = 0, bagMedium = 0, bagBig = 0
+        var en2Solo = 0, en2Group = 0, en2Family = 0
+        var lwb2Solo = 0, lwb2Group = 0, lwb2Family = 0
+        var bag2Small = 0, bag2Medium = 0, bag2Big = 0
+    }
+    @AppStorage("sessionData") private var sessionData: Data = Data()
+
     @State private var pc_ccSolo = 0
     @State private var pc_ccGroup = 0
     @State private var pc_ccFamily = 0
@@ -68,20 +84,16 @@ struct SessionObservationView: View {
             storeSection
         }
         .padding(.horizontal, 12)
-        .padding(.top, 30)
+        .padding(.top, 45)
         .padding(.bottom, 50)
         .task {
             impactGenerator.prepare()
+            loadState()
             let (condition, temp) = await WeatherService.shared.currentWeather()
             weather = condition
             temperature = temp
         }
-        .onDisappear {
-            elapsedTimer?.invalidate()
-            elapsedTimer = nil
-            sliceTimer?.invalidate()
-            sliceTimer = nil
-        }
+
     }
 
     private var statusBar: some View {
@@ -247,11 +259,55 @@ struct SessionObservationView: View {
         .padding(.horizontal, 2)
     }
 
+    // MARK: - Persistence
+
+    private func saveState() {
+        let s = PersistedState(
+            intervalStart: intervalStart, currentSessionNumber: currentSessionNumber,
+            cumulativeTotal: cumulativeTotal, cycleCount: cycleCount,
+            weather: weather, temperature: temperature,
+            pc_ccSolo: pc_ccSolo, pc_ccGroup: pc_ccGroup, pc_ccFamily: pc_ccFamily,
+            pc_wSolo: pc_wSolo, pc_wGroup: pc_wGroup, pc_wFamily: pc_wFamily,
+            enSolo: enSolo, enGroup: enGroup, enFamily: enFamily,
+            lwbSolo: lwbSolo, lwbGroup: lwbGroup, lwbFamily: lwbFamily,
+            bagSmall: bagSmall, bagMedium: bagMedium, bagBig: bagBig,
+            en2Solo: en2Solo, en2Group: en2Group, en2Family: en2Family,
+            lwb2Solo: lwb2Solo, lwb2Group: lwb2Group, lwb2Family: lwb2Family,
+            bag2Small: bag2Small, bag2Medium: bag2Medium, bag2Big: bag2Big
+        )
+        sessionData = (try? JSONEncoder().encode(s)) ?? Data()
+    }
+
+    private func loadState() {
+        guard let s = try? JSONDecoder().decode(PersistedState.self, from: sessionData),
+              let start = s.intervalStart,
+              Date().timeIntervalSince(start) < 600 else { return }
+        isActive = true
+        intervalStart = start
+        currentSessionNumber = s.currentSessionNumber
+        cumulativeTotal = s.cumulativeTotal
+        cycleCount = s.cycleCount
+        weather = s.weather; temperature = s.temperature
+        pc_ccSolo = s.pc_ccSolo; pc_ccGroup = s.pc_ccGroup; pc_ccFamily = s.pc_ccFamily
+        pc_wSolo = s.pc_wSolo; pc_wGroup = s.pc_wGroup; pc_wFamily = s.pc_wFamily
+        enSolo = s.enSolo; enGroup = s.enGroup; enFamily = s.enFamily
+        lwbSolo = s.lwbSolo; lwbGroup = s.lwbGroup; lwbFamily = s.lwbFamily
+        bagSmall = s.bagSmall; bagMedium = s.bagMedium; bagBig = s.bagBig
+        en2Solo = s.en2Solo; en2Group = s.en2Group; en2Family = s.en2Family
+        lwb2Solo = s.lwb2Solo; lwb2Group = s.lwb2Group; lwb2Family = s.lwb2Family
+        bag2Small = s.bag2Small; bag2Medium = s.bag2Medium; bag2Big = s.bag2Big
+        elapsedTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in now = Date() }
+        sliceTimer = Timer.scheduledTimer(withTimeInterval: sliceInterval, repeats: true) { _ in sliceNow() }
+    }
+
+    private func clearState() { sessionData = Data() }
+
     // MARK: - Actions
 
     private func increment(_ value: Binding<Int>) {
         if !isActive { startSession() }
         value.wrappedValue += 1
+        saveState()
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 
@@ -272,6 +328,7 @@ struct SessionObservationView: View {
         sliceTimer = Timer.scheduledTimer(withTimeInterval: sliceInterval, repeats: true) { _ in
             sliceNow()
         }
+        saveState()
     }
 
     private func sliceNow() {
@@ -294,6 +351,7 @@ struct SessionObservationView: View {
         cycleCount += 1
         self.intervalStart = now
         resetCounters()
+        saveState()
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 
@@ -367,6 +425,7 @@ struct SessionObservationView: View {
         sliceTimer?.invalidate()
         sliceTimer = nil
         reset()
+        clearState()
     }
 
     private var formattedCycleElapsed: String {

@@ -82,14 +82,14 @@ struct SessionRecord: Codable {
     static var sheetHeaders: [String] {
         [
             "Session", "Date", "Start", "End", "Weather", "Temp",
-            "PassByToCableCar: Solo", "PassByToCableCar: Group", "PassByToCableCar: Family",
-            "PassByToWharf: Solo", "PassByToWharf: Group", "PassByToWharf: Family",
-            "Entered: Solo", "Entered: Group", "Entered: Family",
-            "Leaving with Bag: Solo", "Leaving with Bag: Group", "Leaving with Bag: Family",
-            "Bag Small", "Bag Medium", "Bag Big",
-            "Entered2: Solo", "Entered2: Group", "Entered2: Family",
-            "Leaving with Bag2: Solo", "Leaving with Bag2: Group", "Leaving with Bag2: Family",
-            "Bag2 Small", "Bag2 Medium", "Bag2 Big",
+            "PassByToCableCarSolo", "PassByToCableCarGroup", "PassByToCableCarFamily",
+            "PassByToWharfSolo", "PassByToWharfGroup", "PassByToWharfFamily",
+            "EnteredSolo", "EnteredGroup", "EnteredFamily",
+            "LeavingWithBagSolo", "LeavingWithBagGroup", "LeavingWithBagFamily",
+            "BagSmall", "BagMedium", "BagBig",
+            "Entered2Solo", "Entered2Group", "Entered2Family",
+            "LeavingWithBag2Solo", "LeavingWithBag2Group", "LeavingWithBag2Family",
+            "Bag2Small", "Bag2Medium", "Bag2Big",
         ]
     }
 }
