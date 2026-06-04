@@ -26,6 +26,7 @@ struct SurveyFormView: View {
         return ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
+                    statsBar
                     genderSection
                     ageSection
                     raceSection
@@ -99,15 +100,6 @@ struct SurveyFormView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    HStack(spacing: 4) {
-                        Text("\(totalCount)")
-                        Text("/")
-                        Text("\(todayCount)")
-                            .foregroundColor(Color.appAccent)
-                    }
-                    .appFont(.semibold)
-                }
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Clear") { s.reset() }
                         .foregroundColor(Color.appAccent)
@@ -462,6 +454,34 @@ struct SurveyFormView: View {
                 }
             }
         }
+    }
+
+    private var statsBar: some View {
+        HStack(spacing: 4) {
+            Spacer()
+            Text("Total")
+                .appFont(.medium)
+                .foregroundColor(.secondary)
+            Text("\(totalCount)")
+                .appFont(.semibold)
+            Text("/")
+                .appFont(.medium)
+                .foregroundColor(.secondary)
+            Text("\(todayCount)")
+                .appFont(.semibold)
+                .foregroundColor(Color.appAccent)
+            if pendingCount > 0 {
+                Text("\(pendingCount)")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.orange)
+                    .clipShape(Capsule())
+            }
+            Spacer()
+        }
+        .padding(.bottom, 4)
     }
 
     private var submitButton: some View {

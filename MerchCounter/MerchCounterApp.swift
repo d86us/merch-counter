@@ -7,6 +7,7 @@ struct MerchCounterApp: App {
             ContentView()
                 .task {
                     await SubmissionQueue.shared.flushInBackground()
+                    await SessionQueue.shared.flushInBackground()
                 }
         }
     }

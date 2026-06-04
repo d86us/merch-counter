@@ -9,23 +9,27 @@ Tourist merch survey app for Fisherman's Wharf, SF. Collects demographics, cloth
 ```
 MerchCounter/
 ├── Config.swift                # AppAccent (yellow), .appFont() modifier
-├── ContentView.swift           # NavigationStack root
-├── MerchCounterApp.swift       # @main, flushes pending queue on launch
+├── ContentView.swift           # NavigationStack root + mode toggle (Survey / Session)
+├── MerchCounterApp.swift       # @main, flushes both queues on launch
 ├── Models/
 │   ├── FormState.swift         # @Observable form state, options arrays, toRecord()
-│   ├── SurveyRecord.swift      # Codable record, sheetHeaders & sheetRowValues
+│   ├── SurveyRecord.swift      # Codable record → Design sheet
+│   ├── SessionRecord.swift     # Codable record → Flow sheet
 │   └── ColorOption.swift       # Color definitions grouped by family
 ├── Services/
-│   ├── GoogleSheetsService.swift  # OAuth2 JWT + Sheets API append/headers
+│   ├── GoogleSheetsService.swift  # OAuth2 JWT + Sheets API (parameterized sheet name)
 │   ├── WeatherService.swift       # Open-Meteo API, cached 30 min, 10s timeout
-│   └── SubmissionQueue.swift      # Actor, local JSON file, background upload, cumulative counters
+│   ├── SubmissionQueue.swift      # Actor, local JSON file, background upload, cumulative counters
+│   └── SessionQueue.swift         # Actor, local JSON file, background upload (no counters)
 └── Views/
-    ├── SurveyFormView.swift       # Main form + SegmentedControl, RadioGroup, MultiSelectGrid
+    ├── SurveyFormView.swift       # Main per-person survey (Design sheet)
+    ├── SessionObservationView.swift  # Session-level buyer/bag tracking (Flow sheet)
     └── ColorSwatchPicker.swift    # Color swatch grid with custom tags
 ```
 
 ## Data Flow
 
+### Survey (Design sheet)
 1. User fills form → taps Submit
 2. Weather fetched (best-effort, cached 30 min, silently fails offline)
 3. `SubmissionQueue.shared.add(record)` → saves to `Documents/submission_queue.json`, increments cumulative counter (UserDefaults)
@@ -34,16 +38,34 @@ MerchCounter/
 6. Queue auto-flushes in background to Google Sheets
 7. Orange badge in nav bar shows pending count; nav title shows cumulative "Total X Today Y"
 
+### Session (Flow sheet)
+1. Tap "Start Session" — timer begins, steppers enabled
+2. Count buyers and bag fill levels during observation window
+3. Tap "End & Submit" — stops timer, creates `SessionRecord`, enqueues to `SessionQueue`
+4. Haptic + toast, resets for next session
+5. Queue auto-flushes in background
+
 ## Google Sheets
 
+### Sheets
+- **Design** (renamed from Sheet1) — per-person survey data
+- **Flow** (new) — session-level observation data
+
+### Design Columns
+`Date, Time, Weather, Temperature, Gender, Age, Demographic, Group, Count, Matching, Mode, Bag Sizes, Image, Typography, Merch Types, Garment Colors, Print Colors, Print Position, Comment`
+
+### Flow Columns
+`Session, Date, Start, End, Weather, Temp, PassByToCableCar: Solo, PassByToCableCar: Group, PassByToCableCar: Family, PassByToWharf: Solo, PassByToWharf: Group, PassByToWharf: Family, Entered: Solo, Entered: Group, Entered: Family, Leaving with Bag: Solo, Leaving with Bag: Group, Leaving with Bag: Family, Bag Small, Bag Medium, Bag Big, Entered2: Solo, Entered2: Group, Entered2: Family, Leaving with Bag2: Solo, Leaving with Bag2: Group, Leaving with Bag2: Family, Bag2 Small, Bag2 Medium, Bag2 Big`
+
+### Auth
 - **Bundle resource**: `GoogleServiceAccount.json` in `MerchCounter/Resources/` (excluded from git via `.gitignore`)
 - **Sheet ID**: Hardcoded in `GoogleSheetsService.init()`
 - **Writing**: `valueInputOption=RAW` (no date parsing)
-- **Columns**: `Date, Time, Weather, Temperature, Gender, Age, Demographic, Group, Count, Matching, Mode, Bag Sizes, Image, Typography, Merch Types, Garment Colors, Print Colors, Print Position, Comment`
 
 ## Key Decisions
 
-- **Offline-first**: Everything must work offline. SubmissionQueue persists to local JSON. Weather fetch, sheet sync, and header writes silently fail. UI never blocks on network.
+- **Offline-first**: Everything must work offline. Both queues persist to local JSON. Weather fetch, sheet sync, and header writes silently fail. UI never blocks on network.
+- Two sheets in one spreadsheet — Design for detailed surveys, Flow for session counts. Separate tabs, separate headers.
 - `Color.appAccent` (yellow, defined in `Config.swift`) — single source for all highlight color
 - `.appFont()` (`.subheadline` with weight param) — unified font everywhere
 - Custom `SegmentedControl` with slider highlight instead of system Picker (reliable yellow bg)
@@ -53,7 +75,8 @@ MerchCounter/
 - Demographics: required field
 - Weather: auto-fetched, gracefully falls back to cached/"Unknown" offline
 - Yellow accent with black text for high contrast in sunlight
-- Nav title shows "Total X Today Y" — cumulative counters (UserDefaults), synced from sheet + pending queue on launch
+- Nav bar principal shows mode picker (Survey / Session) as expandable menu
+- Counter ("Total X / Today Y") is inline in Survey form, not in toolbar
 - Project uses `PBXFileSystemSynchronizedRootGroup` — new files in `MerchCounter/` auto-included
 
 ## Build Requirements

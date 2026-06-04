@@ -8,6 +8,9 @@ final class GoogleSheetsService: @unchecked Sendable {
     private var tokenExpiration: Date?
     private let session = URLSession.shared
 
+    private let designSheet = "Design"
+    private let flowSheet = "Flow"
+
     init() throws {
         self.spreadsheetId = "1Gp_FVFH6KJWFTgMEY87V5Tvl4cZ8YRyCSxtXa8cfC2Y"
         guard let url = Bundle.main.url(forResource: "GoogleServiceAccount", withExtension: "json") else {
@@ -21,9 +24,14 @@ final class GoogleSheetsService: @unchecked Sendable {
 
     func appendRecord(_ record: SurveyRecord) async throws {
         let token = try await getValidToken()
+        try await ensureHeaders(token: token, sheet: designSheet, headers: SurveyRecord.sheetHeaders)
+        try await appendRow(record.sheetRowValues, token: token, sheet: designSheet)
+    }
 
-        try await ensureHeaders(token: token)
-        try await appendRow(record, token: token)
+    func appendSessionRecord(_ record: SessionRecord) async throws {
+        let token = try await getValidToken()
+        try await ensureHeaders(token: token, sheet: flowSheet, headers: SessionRecord.sheetHeaders)
+        try await appendRow(record.sheetRowValues, token: token, sheet: flowSheet)
     }
 
     // MARK: - Token Management
@@ -97,7 +105,6 @@ final class GoogleSheetsService: @unchecked Sendable {
         return signature
     }
 
-    /// Converts PKCS#8 private key PEM to PKCS#1 DER data (required by Security framework).
     private func extractRSAKeyFromPKCS8(_ pem: String) throws -> Data {
         let base64 = pem
             .components(separatedBy: .newlines)
@@ -106,21 +113,16 @@ final class GoogleSheetsService: @unchecked Sendable {
         guard let der = Data(base64Encoded: base64) else {
             throw ServiceError.keyParseFailed
         }
-        // PKCS#8: SEQUENCE { INTEGER(0), SEQUENCE { OID, NULL }, OCTET STRING { RSAPrivateKey } }
         var pos = 0
-        // Outer SEQUENCE
         guard der[pos] == 0x30 else { throw ServiceError.keyParseFailed }
         pos += 1
         pos += readLength(in: der, at: pos).bytesConsumed
-        // Version INTEGER
         guard der[pos] == 0x02 else { throw ServiceError.keyParseFailed }
         pos += 1
         pos = skipLength(in: der, at: pos)
-        // AlgorithmIdentifier SEQUENCE
         guard der[pos] == 0x30 else { throw ServiceError.keyParseFailed }
         pos += 1
         pos = skipLength(in: der, at: pos)
-        // OCTET STRING containing PKCS#1 key
         guard der[pos] == 0x04 else { throw ServiceError.keyParseFailed }
         pos += 1
         let keyLen = readLength(in: der, at: pos)
@@ -131,21 +133,21 @@ final class GoogleSheetsService: @unchecked Sendable {
 
     // MARK: - Sheet Operations
 
-    private func ensureHeaders(token: String) async throws {
-        try await writeHeaders(token: token)
+    private func ensureHeaders(token: String, sheet: String, headers: [String]) async throws {
+        try await writeHeaders(token: token, sheet: sheet, headers: headers)
     }
 
-    private func writeHeaders(token: String) async throws {
-        let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(spreadsheetId)/values/Sheet1!1:1?valueInputOption=RAW")!
+    private func writeHeaders(token: String, sheet: String, headers: [String]) async throws {
+        let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(spreadsheetId)/values/\(sheet)!1:1?valueInputOption=RAW")!
         var req = URLRequest(url: url)
         req.httpMethod = "PUT"
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         let body = ValueRange(
-            range: "Sheet1!1:1",
+            range: "\(sheet)!1:1",
             majorDimension: "ROWS",
-            values: [SurveyRecord.sheetHeaders]
+            values: [headers]
         )
         req.httpBody = try JSONEncoder().encode(body)
 
@@ -155,17 +157,17 @@ final class GoogleSheetsService: @unchecked Sendable {
         }
     }
 
-    private func appendRow(_ record: SurveyRecord, token: String) async throws {
-        let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(spreadsheetId)/values/Sheet1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS")!
+    private func appendRow(_ values: [String], token: String, sheet: String) async throws {
+        let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(spreadsheetId)/values/\(sheet):append?valueInputOption=RAW&insertDataOption=INSERT_ROWS")!
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         let body = ValueRange(
-            range: "Sheet1",
+            range: sheet,
             majorDimension: "ROWS",
-            values: [record.sheetRowValues]
+            values: [values]
         )
         req.httpBody = try JSONEncoder().encode(body)
 
@@ -225,7 +227,7 @@ struct ValueRange: Codable {
 extension GoogleSheetsService {
     func fetchRowCounts() async throws -> (total: Int, today: Int) {
         let token = try await getValidToken()
-        let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(spreadsheetId)/values/Sheet1!A:A")!
+        let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(spreadsheetId)/values/\(designSheet)!A:A")!
         var req = URLRequest(url: url)
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         let (data, resp) = try await session.data(for: req)
