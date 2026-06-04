@@ -107,7 +107,7 @@ struct SessionObservationView: View {
                 .underline()
                 .onTapGesture { manualEnd() }
         }
-        .opacity(isActive ? 1 : 0.2)
+        .opacity(isActive ? 1 : 0.5)
         .padding(.bottom, 6)
     }
 
@@ -297,22 +297,25 @@ struct SessionObservationView: View {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 
-    private func autoEnd() {
+    private func manualEnd() {
+        guard isActive, let start = intervalStart else { return }
+        let now = Date()
         elapsedTimer?.invalidate()
         elapsedTimer = nil
         sliceTimer?.invalidate()
         sliceTimer = nil
-        reset()
-    }
-
-    private func manualEnd() {
-        guard isActive, let start = intervalStart else { return }
-        let now = Date()
         if intervalTotal > 0 {
             let record = makeRecord(from: start, to: now)
-            Task { await SessionQueue.shared.add(record) }
+            isSaving = true
+            Task { @MainActor in
+                await SessionQueue.shared.add(record)
+                try? await Task.sleep(nanoseconds: 800_000_000)
+                isSaving = false
+                autoEnd()
+            }
+        } else {
+            autoEnd()
         }
-        autoEnd()
     }
 
     private func makeRecord(from fromDate: Date, to toDate: Date) -> SessionRecord {
@@ -356,6 +359,14 @@ struct SessionObservationView: View {
         cumulativeTotal = 0
         cycleCount = 0
         resetCounters()
+    }
+
+    private func autoEnd() {
+        elapsedTimer?.invalidate()
+        elapsedTimer = nil
+        sliceTimer?.invalidate()
+        sliceTimer = nil
+        reset()
     }
 
     private var formattedCycleElapsed: String {
