@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var formState = FormState()
-    @State private var selectedTab = 1
+    @State private var selectedTab = 2
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -20,6 +20,12 @@ struct ContentView: View {
                 Text("Survey 2")
             }
             .tag(1)
+
+            SimpleSessionObservationView()
+                .tabItem {
+                Text("Survey 3")
+            }
+            .tag(2)
         }
         .tint(Color.appAccent)
         .onAppear {

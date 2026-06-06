@@ -10,6 +10,7 @@ final class GoogleSheetsService: @unchecked Sendable {
 
     private let designSheet = "Design"
     private let flowSheet = "Flow"
+    private let simpleFlowSheet = "SimpleFlow"
 
     init() throws {
         self.spreadsheetId = "1Gp_FVFH6KJWFTgMEY87V5Tvl4cZ8YRyCSxtXa8cfC2Y"
@@ -32,6 +33,12 @@ final class GoogleSheetsService: @unchecked Sendable {
         let token = try await getValidToken()
         try await ensureHeaders(token: token, sheet: flowSheet, headers: SessionRecord.sheetHeaders)
         try await appendRow(record.sheetRowValues, token: token, sheet: flowSheet)
+    }
+
+    func appendSimpleSessionRecord(_ record: SimpleSessionRecord) async throws {
+        let token = try await getValidToken()
+        try await ensureHeaders(token: token, sheet: simpleFlowSheet, headers: SimpleSessionRecord.sheetHeaders)
+        try await appendRow(record.sheetRowValues, token: token, sheet: simpleFlowSheet)
     }
 
     // MARK: - Token Management
